@@ -1,0 +1,31 @@
+---
+abstract: 'Perl modules for computing measures of semantic'
+author:
+  - 'Ted Pedersen, Siddharth Patwardhan, Satanjeev Banerjee, Jason Michelizzi'
+build_requires:
+  ExtUtils::MakeMaker: 0
+configure_requires:
+  ExtUtils::MakeMaker: 0
+distribution_type: module
+dynamic_config: 0
+generated_by: 'ExtUtils::MakeMaker version 6.57_05'
+license: gpl
+meta-spec:
+  url: http://module-build.sourceforge.net/META-spec-v1.4.html
+  version: 1.4
+name: WordNet-Similarity
+no_index:
+  directory:
+    - t
+    - inc
+requires:
+  CGI: 0
+  Digest::SHA1: 0
+  File::Find: 0
+  File::Spec: 0
+  File::Temp: 0
+  Getopt::Long: 0
+  IO: 0
+  Text::Similarity: 0.02
+  WordNet::QueryData: 1.40
+version: 2.05

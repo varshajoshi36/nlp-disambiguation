@@ -1,0 +1,11 @@
+import solr
+
+# create a connection to a solr server
+s = solr.SolrConnection('http://example.org:8083/solr')
+
+
+a = "features:palm^5 tree^4 "
+# do a search
+response = s.query(a)
+for hit in response.results:
+    print hit['fearures']

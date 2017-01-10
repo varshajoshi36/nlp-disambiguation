@@ -1,0 +1,109 @@
+#! /usr/bin/perl -w 
+use strict;
+use warnings;
+
+use WordNet::QueryData;
+use WordNet::Similarity::GlossFinder;
+use WordNet::Similarity::lesk;
+
+
+# Get the concepts. wps1 has the string from python
+my $wps1;
+my $wps2;
+my $arrs1;
+my $arrs2;
+$wps1 = shift;
+$wps2 = shift;
+unless ($wps1) {
+    print STDERR "Undefined input\n";
+    print STDERR "Usage: sample.pl synset_list \n";
+    #print STDERR "\tSynsets must be in word#pos#sense format (ex., dog#n#1)\n";
+    exit 1;
+}
+
+
+#here the string is split converted into an array and all the unwanted things are replaced with blank
+my ($error, $errString);
+my $err;
+my @split_list1;
+my @split_list2;
+@split_list1 = split(/,/,$wps1);
+
+$arrs1 = @split_list1;
+my $i;
+$i = 0;
+$split_list1[$i] =~ s/\[//ig;
+$split_list1[$arrs1-1] =~ s/\]//ig;
+for($i = 0; $i < $arrs1; $i = $i+1){
+	$split_list1[$i] =~ s/\'//ig;
+	$split_list1[$i] =~ s/\ //ig;
+}
+
+@split_list2 = split(/,/,$wps2);
+
+$arrs2 = @split_list2;
+
+$i = 0;
+$split_list2[$i] =~ s/\[//ig;
+$split_list2[$arrs2-1] =~ s/\]//ig;
+for($i = 0; $i < $arrs2; $i = $i+1){
+	$split_list2[$i] =~ s/\'//ig;
+	$split_list2[$i] =~ s/\ //ig;
+}
+
+
+
+my $wn = WordNet::QueryData->new;
+die "Unable to create WordNet object.\n" if(!$wn);
+
+
+#the following lines are for gloss def
+my $obj = WordNet::Similarity::GlossFinder->new ($wn);
+($err, $errString) = $obj->getError ();
+$err and die $errString;
+
+# Create an object for each of the measures of
+# semantic relatedness.
+
+my $lesk = WordNet::Similarity::lesk->new($wn, "config-files/config-lesk.conf");
+die "Unable to create lesk object.\n" if(!defined $lesk);
+($error, $errString) = $lesk->getError();
+die $errString if($error > 1);
+
+# Find the relatedness of the concepts using each of
+# the measures.
+my $j;
+my $value;
+my $maxval;
+my $maxsyn1;
+my $maxsyn2;
+$maxval = 0;
+for($i = 0; $i < $arrs1; $i = $i+1){
+	for($j = 0; $j < $arrs2; $j = $j+1){	
+	        print "$split_list1[$i], $split_list2[$j]"; 
+		$value = $lesk->getRelatedness($split_list1[$i], $split_list2[$j]);
+		($error, $errString) = $lesk->getError();
+		die $errString if($error > 1);
+		#the following loop is to print definations of two words who hav relatedness more than 100 .. 100 value taken just for the sake
+		
+		
+		
+		#print "LESK Similarity = $value\n";
+		#print "LESK ErrorString = $errString\n" if $error;
+		if($value > $maxval){
+			$maxval = $value;
+			$maxsyn1 = $split_list1[$i];
+			$maxsyn2 = $split_list2[$j];
+			
+		}
+	}
+}
+print "Max Similarity = $maxval\n\n";
+my ($wps1gloss, $wps2gloss, $weight, $relation ) = $obj -> getSuperGlosses ($maxsyn1, $maxsyn2);
+			print "$maxsyn1:\n";
+			print "$wps1gloss->[0]\n";
+			print "$maxsyn2:\n";
+			print "$wps2gloss->[0]\n";
+
+__END__
+

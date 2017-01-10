@@ -1,0 +1,164 @@
+#! /usr/bin/python
+import nltk
+from nltk.corpus import wordnet as wn
+from nltk.corpus import stopwords
+import string
+import subprocess
+import re
+
+global text
+text = list()
+flag = 0
+global sentence1
+
+#synset format conversion for python format
+def list_format(ls1):
+	l1 = list()
+	for w in ls1:
+		l1.append('Synset(\''+ (str(w).replace('#','.').replace('#a','#s')) + '\')')
+	return l1
+
+def process_string(strin1):
+	string =  strin1.split(" ")
+	string = list_format(string)
+	losis = string
+	list_synset = [wn.synset(re.findall("'([^']*)'", i)[0]) for i in losis]
+	
+	global sentence1
+	final_str = sentence1
+	for i in list_synset:
+		final_str = final_str + ' ' + i.definition	
+
+	result = ''
+	words = list()
+	for word in final_str.split():
+    		if word not in words:
+        		result = result + word + ' '
+			words.append(word)
+	stop = stopwords.words('english')
+	result1 = ''
+	for i in result.split(" "):
+		if(i not in stop):
+			result1 = result1 + i + ' '
+		else:
+			continue
+	print result1
+
+#function for getting pos of particular word
+def get_pos(pnt):
+	global text
+	for i in text:
+		if(i[0] == pnt):
+			return i[1]
+		else:
+			continue
+
+#for wordnet part-of-speech tagging
+def get_wordnet_pos(treebank_tag):
+	if treebank_tag.startswith('J'):
+		return 'a'
+	elif treebank_tag.startswith('V'):
+		return 'v'
+	elif treebank_tag.startswith('N'):
+		return 'n'
+	elif treebank_tag.startswith('R'):
+		return 'r'
+
+#this function goes to perl and gives all the input
+def disamb1(l1):
+	set1 = str(l1)
+	cmd = ['perl', 'fin.pl', set1]
+	proc = subprocess.Popen(cmd, stdout=subprocess.PIPE)
+	string = ""
+	for line in proc.stdout:
+		string = string + line
+	process_string(string)
+	
+#following code formats the synset list which makes it acceptable for perl computations 	
+def list_format1(ls1):
+	l1 = list()
+	temp = list()
+	for i in range(0,len(ls1)):
+		
+		for j in range (0,len(ls1[i])):
+			l1.append((str(ls1[i][j]).replace('Synset(\'','').replace('.','#').replace('\')','').replace('#s','#a')))
+		if(i%4 == 3):
+			l1.append('%+')	
+	disamb1(l1)
+
+#take input as the query and convert it into lower case letters
+print "enter input query"
+sentence1 = raw_input().lower()
+
+#punctuation mark removal
+for c in string.punctuation:
+	sentence1= sentence1.replace(c,"")
+
+#find all compound phrases in input query
+cmd = ['perl', 't.pl', sentence1]
+proc = subprocess.Popen(cmd, stdout=subprocess.PIPE)
+
+sentence2 = ""
+for line in proc.stdout:
+	sentence2 = sentence2 + line
+
+#wordnet POS tagging
+text1 = nltk.word_tokenize(sentence2)
+treebank_tag = nltk.pos_tag(text1)
+final = []
+words = []
+tags = []
+for s1 in text1:
+	words.append(s1)
+
+for s2 in treebank_tag:
+	tags.append(s2[1])
+
+for s3 in tags:
+	result = get_wordnet_pos(s3)
+	final.append(result)
+
+sentence = zip(words,final)
+
+#stopwords removal from input query
+stop = stopwords.words('english')
+for i in sentence:
+	if(i[0] not in stop):
+		text.append(i)
+	else:
+		continue
+
+
+#print text
+
+flag = 0
+data_synsets = dict()
+j = 0
+pos_list = ['n', 'v', 'a', 'r']
+for w in text:
+	for a in pos_list:
+		if(a == w[1]):
+			data_synsets[j] = wn.synsets(w[0],pos = w[1])
+			if(len(data_synsets[j]) == 0):
+				flag = 1
+				while(j%4 != 0):
+					j -= 1
+				for b in pos_list:
+					data_synsets[j] = wn.synsets(w[0],pos = b)
+					j += 1
+		else :
+			data_synsets[j] = wn.synsets("asdf")
+	   	j += 1
+	   	if(flag == 1):
+	   		j -= 1
+	   		flag = 0
+			break
+
+#print data_synsets	
+list_format1(data_synsets)
+
+
+
+
+
+	
